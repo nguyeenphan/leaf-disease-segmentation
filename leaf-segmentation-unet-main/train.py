@@ -29,7 +29,7 @@ def read_imgs_and_masks(folder_path, display=False):
     Read images and their corresponding mask (optionally show two
     random image-mask pairs)
     """
-    mask_paths = glob.glob(folder_path + '/*seg.jpg')
+    mask_paths = glob.glob(folder_path + '/*seg.png')
     img_paths = list(map(lambda st: st.replace("seg", "img"), mask_paths))
 
     if display:
