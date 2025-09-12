@@ -89,7 +89,7 @@ trans = transforms.Compose([
 ])
 
 aug = A.Compose([
-    A.RandomSizedCrop(min_max_height=(160, 224), height=224, width=224, p=0.5),
+    A.RandomSizedCrop(min_max_height=(160, 224), size=(224, 224), p=0.5),
     A.PadIfNeeded(min_height=224, min_width=224, p=1),
     A.HorizontalFlip(p=0.5),
     A.VerticalFlip(p=0.5),
@@ -173,7 +173,7 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
                 print("saving best model")
                 best_loss = epoch_loss
                 # save to disk as well
-                torch.save(model.state_dict(), os.path.join(WEIGHT_PATH, 'best_val_weights.pth'))
+                torch.save(model.state_dict(), os.path.join(WEIGHT_PATH, 'aug_val_weights.pth'))
                 best_model_wts = copy.deepcopy(model.state_dict())
 
             if phase == 'train':
@@ -182,7 +182,7 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
         time_elapsed = time.time() - since
         print('{:.0f}m {:.0f}s \n'.format(
             time_elapsed // 60, time_elapsed % 60))
-        torch.save(model.state_dict(), os.path.join(WEIGHT_PATH, 'latest_weights.pth'))
+        torch.save(model.state_dict(), os.path.join(WEIGHT_PATH, 'aug_latest_weights.pth'))
     print('Best val loss: {:4f}'.format(best_loss))
 
     # load best model weights
@@ -191,8 +191,8 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
 
 if __name__ == "__main__":
     # folder paths
-    TRAIN_PATH = './dataset/train'
-    VAL_PATH = './dataset/test'
+    TRAIN_PATH = './dataset/split_aug_sq/train'
+    VAL_PATH = './dataset/split_aug_sq/val'
 
     train_img_paths, train_img_masks = read_imgs_and_masks(TRAIN_PATH)
     val_img_paths, val_img_masks = read_imgs_and_masks(VAL_PATH)
@@ -212,11 +212,15 @@ if __name__ == "__main__":
         'val': DataLoader(val_set, batch_size=batch_size, shuffle=True, num_workers=0)
     }
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # device selection: prefer MPS (Apple Silicon), then CUDA, else CPU
+    if torch.backends.mps.is_available():
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
     print(f'running on: {device}')
 
     num_class = 1
-    model = ResNetUNet(num_class).to(device)
+    model = ResNetUNet(n_class=num_class).to(device)
 
     # freeze backbone layers
     # for l in model.base_layers:

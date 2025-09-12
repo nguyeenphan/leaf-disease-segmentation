@@ -8,15 +8,16 @@ import cv2
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
+from glob import glob
 
 from model import ResNetUNet
 from utilities import reverse_transform, reverse_transform_mask
 from preprocess import check_dir
 
-WEIGHT_PATH = "./model/pretrained"
+WEIGHT_PATH = "./model/pretrained/aug"
 USE_BEST_VAL = True
 DISPLAY_PLOTS = False
-TEST_DIR = "./test/content/img_224/"
+TEST_DIR = "./dataset/split_ori_sq/test"
 SAVE_PATH = "./test/output"
 PREFIX = "seg_"
 
@@ -54,16 +55,17 @@ if __name__ == "__main__":
     print(f'running on: {device}')
 
     num_class = 1
-    model = ResNetUNet(num_class).to(device)
+    model = ResNetUNet(n_class=num_class).to(device)
 
     if USE_BEST_VAL:
         model.load_state_dict(torch.load(
-            os.path.join(WEIGHT_PATH, "best_val_weights.pth")))
+            os.path.join(WEIGHT_PATH, "aug_val_weights.pth")))
     else:
         model.load_state_dict(torch.load(
-            os.path.join(WEIGHT_PATH, "latest_weights.pth")))
+            os.path.join(WEIGHT_PATH, "agu_latest_weights.pth")))
 
-    test_img_paths = list(paths.list_images(TEST_DIR))
+    # chỉ lấy ảnh gốc *_img.png trong thư mục test
+    test_img_paths = sorted(glob(os.path.join(TEST_DIR, "*_img.png")))
     print(f'found {len(test_img_paths)} images')
 
     # small batch_size if you are testing on 1 or 2 images
