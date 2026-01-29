@@ -3,8 +3,8 @@ from pathlib import Path
 import numpy as np
 from preprocess.generate_dataset import resize2square, check_dir
 
-IN_ROOT  = Path("dataset/split_aug")      # input gốc (ori)
-OUT_ROOT = Path("dataset/split_aug_sq")   # output sau resize
+IN_ROOT  = Path("dataset/split_aug")     
+OUT_ROOT = Path("dataset/split_aug_sq")
 SIZE = 224
 
 splits = ["train", "val", "test"]
@@ -26,7 +26,6 @@ for split in splits:
         img  = resize2square(img, SIZE)
         mask = resize2square(mask, SIZE)
 
-        # giữ nguyên tên file
         fname_img  = os.path.basename(img_path)
         fname_mask = os.path.basename(mask_path)
 

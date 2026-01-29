@@ -1,0 +1,52 @@
+# Leaf Segmentation UI Configuration
+
+# Model settings
+model:
+  # Path to model weights (relative to project root)
+  weight_path: "./leaf-segmentation-unet-main/model/resnet50-unet-aug/loss3_bce_ftv_lap/resnet50_best_dice.pth"
+
+  # Device: 'cuda', 'mps', 'cpu', or 'auto' for automatic detection
+  device: "auto"
+
+  # Model architecture
+  architecture: "ResNet50-UNet"
+  num_classes: 1
+  input_size: [224, 224]
+
+# Inference settings
+inference:
+  # Default threshold for binary segmentation
+  default_threshold: 0.6
+
+  # Default overlay settings
+  default_alpha: 0.5
+  default_color: "green"
+
+  # Maximum display size (to avoid memory issues)
+  max_display_size: 800
+
+# UI settings
+ui:
+  # Gradio server settings
+  server_name: "0.0.0.0"
+  server_port: 7860
+
+  # Share publicly (creates public URL)
+  share: false
+
+  # Auto-open browser
+  inbrowser: true
+
+  # Available overlay colors
+  colors:
+    - green
+    - red
+    - blue
+    - yellow
+    - cyan
+    - magenta
+
+advanced:
+  enable_gradients: false
+
+  batch_size: 1

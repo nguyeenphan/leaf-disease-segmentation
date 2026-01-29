@@ -1,83 +1,159 @@
-# leaf-segmentation-unet
-<p>
-    <img src="https://img.shields.io/github/stars/gvil-research/leaf-segmentation-unet?style=flat-square"/>
-    <img src="https://img.shields.io/github/last-commit/gvil-research/leaf-segmentation-unet?style=flat-square"/>
-</p>
+# Leaf Disease Segmentation U-Net
 
-a unet model trained for the semantic segmentation of leaf images
+Semantic segmentation of leaf disease images using **ResNet50-UNet with Attention Gates**. Trained with combined BCE, Focal Tversky, and Laplacian loss for binary leaf/background masks.
 
-## folder structure
+---
+
+## Features
+
+- **Architecture:** ResNet50 encoder + U-Net decoder with attention gates
+- **Loss:** BCE + Focal Tversky + Laplacian (configurable weights)
+- **Training:** Early stopping, Dice/IoU validation, optional mixed precision
+- **Inference:** Batch prediction with GPU/CUDA, MPS (Apple Silicon), or CPU
+
+---
+
+## Requirements
+
+- Python 3.8+
+- PyTorch, torchvision
+- See `requirements.txt`
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Project Structure
 
 ```
 .
-├── dataset
-│   └── note.md
-├── model
-│   ├── pretrained
-│   │   └── download.md
-│   ├── __init__.py
-│   └── model.py
-├── preprocess
-│   ├── generate_dataset.py
-│   ├── __init__.py
-│   └── README.md
-├── test
-│   └── get_testset.sh
-├── utilities
-│   ├── __init__.py
-│   └── utility.py
-├── get_dataset.sh
-├── get_pretrained.sh
-├── LICENSE
+├── dataset/
+│   ├── augmented/          # train/val (after preprocessing)
+│   │   ├── train/          # *_img.png, *_seg.png
+│   │   └── val/
+│   └── original/
+│       └── test/           # *_img.png for prediction
+├── model/
+│   ├── resnet18_unet.py
+│   ├── resnet50_unet.py    # main model + loss functions
+│   └── resnet50-unet-aug/  # trained weights (e.g. loss1_bce_dice/)
+├── preprocess/
+│   ├── generate_dataset.py
+│   └── README.md
+├── utilities/
+├── evaluation/
+├── modify/                  # dataset & evaluation scripts
+├── train.py
 ├── predict.py
-├── README.md
-├── requirements.txt
-└── train.py
+└── requirements.txt
 ```
-#### output samples
-![1](static/1.png)
-![2](static/2.png)
-![3](static/3.png)
-> input images are from the dataset of [Plant Pathology 2021 Challenge](https://www.kaggle.com/c/plant-pathology-2021-fgvc8)
 
-## instructions
+**Dataset naming:** For each sample use `*_img.png` (image) and `*_seg.png` (binary mask). Example: `00001_img.png`, `00001_seg.png`.
 
-### train from scratch
+---
 
-* prepare dataset
+## Dataset Preparation
 
-    linux users can run `get_dataset.sh` instead of first three steps
-    1. cd into `./preprocess`
-    1. download `DenseLeaves.zip` from [here](https://www.egr.msu.edu/denseleaves/Data/DenseLeaves.zip)
-    1. unzip the downloaded file as `./preprocess/DenseLeaves/`
+### Option A: From DenseLeaves (original pipeline)
 
-    1. run `python generate_dataset.py`
+1. Go to `preprocess/` and download [DenseLeaves.zip](https://www.egr.msu.edu/denseleaves/Data/DenseLeaves.zip).
+2. Unzip into `preprocess/DenseLeaves/`.
+3. Run: `python generate_dataset.py` (from inside `preprocess/`).
+4. Dataset is written to `./dataset` (adjust paths in `train.py` if needed).
 
-    The newly processed dataset is now saved at `./dataset`
+### Option B: Custom dataset
 
-* cd back to project root and run `python train.py` to train the model
+- **Train/val:** Put images and masks in `dataset/augmented/train/` and `dataset/augmented/val/` with filenames `*_img.png` and `*_seg.png`.
+- **Test:** Put test images in `dataset/original/test/` as `*_img.png`.
 
-When training, the model saves the weights in the `./model/pretrained` model.
-* `latest_weights.pth` - weights saved at the end of the last epoch
-* `best_val_weights.pth` - weights saved when the model obtained minimum validation loss
+Update `CONFIG` in `train.py` and `TEST_DIR` / `SAVE_PATH` in `predict.py` if your paths differ.
 
-### use pretrained (prediction)
+---
 
-* download pretrained weights
+## Training
 
-linux users can run `get_pretrained.sh` (make sure `gdown` is installed -- `pip install gdown`)
+Main settings are in the `CONFIG` dict at the top of `train.py`:
 
-others can download the weights from links provided in this [file](./model/pretrained/download.md)
+| Key           | Default                     | Description               |
+| ------------- | --------------------------- | ------------------------- |
+| `TRAIN_PATH`  | `./dataset/augmented/train` | Training images & masks   |
+| `VAL_PATH`    | `./dataset/augmented/val`   | Validation set            |
+| `WEIGHT_PATH` | `./model/resnet50`          | Where to save checkpoints |
+| `BATCH_SIZE`  | 16                          | Batch size                |
+| `EPOCHS`      | 100                         | Max epochs                |
+| `IMG_SIZE`    | (224, 224)                  | Input size                |
 
-* specify test image location
+Run training:
 
-edit the `TEST_DIR` variable in `predict.py` to specify custom images or download a sample dataset by running `get_testset.sh` in `./test` folder.
+```bash
+python train.py
+```
 
-> **tip**: if the segmentation results are not satisfactory, modify the mask threshold values in `predict.py` file
-### acknowledgement
+Saved files under `WEIGHT_PATH`:
 
-* DenseLeaves dataset - Michigan State University [visit](https://www.egr.msu.edu/denseleaves/)
-* Plant Pathology 2021 dataset - Kaggle
+- `resnet50_best_dice.pth` — best validation Dice
+- `resnet50_latest_weights.pth` — last epoch
 
-### update log
-2021-06-24: first code upload, most of the code is really bad (I wrote them a while ago). I shall refactor them soon.
+Training uses early stopping (patience 7) on validation Dice.
+
+---
+
+## Prediction
+
+Edit the following at the top of `predict.py`:
+
+| Variable       | Default                                    | Description                   |
+| -------------- | ------------------------------------------ | ----------------------------- |
+| `WEIGHT_PATH`  | `./model/resnet50-unet-aug/loss1_bce_dice` | Folder containing `.pth` file |
+| `USE_BEST_VAL` | `True`                                     | Use best Dice weights         |
+| `TEST_DIR`     | `./dataset/original/test`                  | Directory of `*_img.png`      |
+| `SAVE_PATH`    | `./output/res50-aug`                       | Output directory              |
+
+Then run:
+
+```bash
+python predict.py
+```
+
+Outputs are written to `SAVE_PATH` with optional `PREFIX` (e.g. `seg_00001_img.png`). Input images are resized to 224×224 and normalized with ImageNet stats.
+
+**Tip:** If segmentation is too strict or loose, adjust the binary threshold in `predict.py` (e.g. the `np.where(seg_np > 220, 1, 0)` logic or the sigmoid threshold).
+
+---
+
+## Pretrained Weights
+
+- **From this repo:** Use weights under `model/resnet50-unet-aug/` (e.g. `loss1_bce_dice/resnet50_best_dice.pth`). Set `WEIGHT_PATH` in `predict.py` to the folder that contains the `.pth` file.
+- **Legacy / external:** If you have weights from the old pipeline (e.g. `get_pretrained.sh` or `model/pretrained/download.md`), place them in a directory and set `WEIGHT_PATH` to that directory; ensure the filename in `predict.py` matches (`resnet50_best_dice.pth` or `resnet50_latest_weights.pth`).
+
+---
+
+## Evaluation & Scripts
+
+- **`evaluation/`** — Evaluation results and scripts (e.g. Dice/IoU on test sets).
+- **`modify/`** — Utilities for dataset modification, mask processing, and visualization.
+
+See scripts inside those folders for usage.
+
+---
+
+## Device
+
+- **CUDA:** Used automatically if available.
+- **MPS (Apple Silicon):** Used if CUDA is not available.
+- **CPU:** Fallback if neither is available.
+
+---
+
+## Acknowledgments
+
+- [DenseLeaves](https://www.egr.msu.edu/denseleaves/) — Michigan State University
+- [Plant Pathology 2021 FGVC8](https://www.kaggle.com/c/plant-pathology-2021-fgvc8) — Kaggle (sample inputs)
+
+---
+
+## License
+
+See `LICENSE` in the repository.

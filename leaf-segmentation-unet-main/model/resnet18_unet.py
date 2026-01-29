@@ -12,7 +12,6 @@ def convrelu(in_channels, out_channels, kernel, padding):
         nn.ReLU(inplace=True),
     )
 
-
 class ResNetUNet(nn.Module):
     """
     The ResNetUNet Class
@@ -20,9 +19,10 @@ class ResNetUNet(nn.Module):
     def __init__(self, n_class):
         super().__init__()
 
-        self.base_model = models.resnet18(pretrained=False)
+        self.base_model = models.resnet18(weights=None)
         self.base_layers = list(self.base_model.children())
 
+        # Encoder
         # size=(N, 64, x.H/2, x.W/2)
         self.layer0 = nn.Sequential(*self.base_layers[:3])
         self.layer0_1x1 = convrelu(64, 64, 1, 0)
@@ -39,6 +39,7 @@ class ResNetUNet(nn.Module):
         self.upsample = nn.Upsample(
             scale_factor=2, mode='bilinear', align_corners=True)
 
+        # Decoder
         self.conv_up3 = convrelu(256 + 512, 512, 3, 1)
         self.conv_up2 = convrelu(128 + 512, 256, 3, 1)
         self.conv_up1 = convrelu(64 + 256, 256, 3, 1)
@@ -57,7 +58,7 @@ class ResNetUNet(nn.Module):
         """
         x_original = self.conv_original_size0(layer_input)
         x_original = self.conv_original_size1(x_original)
-
+    
         layer0 = self.layer0(layer_input)
         layer1 = self.layer1(layer0)
         layer2 = self.layer2(layer1)

@@ -4,10 +4,9 @@ import shutil
 import re
 from pathlib import Path
 
-# --- Config ---
 AUG_IMG = Path("/Users/nguyenphan/Developer/Thesis/leaf-segmentation-unet-main/dataset/aug_dataset")
 MASKS   = Path("/Users/nguyenphan/Developer/Thesis/leaf-segmentation-unet-main/dataset/masks")
-OUT     = Path("/Users/nguyenphan/Developer/Thesis/leaf-segmentation-unet-main/dataset/split_aug")
+OUT     = Path("/Users/nguyenphan/Developer/Thesis/leaf-segmentation-unet-main/dataset/split_ori_2")
 
 VAL_RATIO  = 0.1
 TEST_RATIO = 0.1
@@ -19,12 +18,10 @@ random.seed(SEED)
 for split in ["train", "val", "test"]:
     (OUT / split).mkdir(parents=True, exist_ok=True)
 
-# Helper: lấy base_id từ tên file (00000, 00000_style3 → 00000)
 def base_id_from_name(name: str) -> str:
     m = re.match(r"^(\d{5})", name)
     return m.group(1) if m else None
 
-# Gom ảnh theo base_id
 all_imgs = sorted(list(AUG_IMG.glob("*.png")))
 by_id = {}
 for p in all_imgs:
@@ -48,11 +45,11 @@ def copy_id_group(id_list, split):
         mask_src = MASKS / f"{bid}.png"
         assert mask_src.exists(), f"Missing mask for {bid}"
         for img in by_id[bid]:
-            # Ảnh
+            # image
             img_dst = OUT / split / f"{img.stem}_img.png"
             shutil.copy2(img, img_dst)
-            # Mask (đổi tên theo ảnh)
-            mask_dst = OUT / split / f"{img.stem}_seg.png"
+            # mask
+            mask_dst = OUT / split / f"{img.stem}_mask.png"
             shutil.copy2(mask_src, mask_dst)
 
 copy_id_group(train_ids, "train")

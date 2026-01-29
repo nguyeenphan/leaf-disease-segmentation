@@ -1,5 +1,4 @@
 import os
-from imutils import paths
 import imageio
 
 import numpy as np
@@ -10,15 +9,15 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from glob import glob
 
-from model import ResNetUNet
+from model.resnet50_unet import ResNet50UNet
 from utilities import reverse_transform, reverse_transform_mask
 from preprocess import check_dir
 
-WEIGHT_PATH = "./model/pretrained/aug"
+WEIGHT_PATH = "./model/resnet50-unet-aug/loss1_bce_dice"
 USE_BEST_VAL = True
 DISPLAY_PLOTS = False
-TEST_DIR = "./dataset/split_ori_sq/test"
-SAVE_PATH = "./test/output"
+TEST_DIR = "./dataset/original/test"
+SAVE_PATH = "./output/res50-aug"
 PREFIX = "seg_"
 
 trans = transforms.Compose([
@@ -43,37 +42,42 @@ class parseTestset(Dataset):
         _, filename = os.path.split(image_path)
 
         if self.transform:
-            image = self.transform(image)  # ToTensor
-            image = transforms.Normalize(  # TODO: remove this?
+            image = self.transform(image)
+            image = transforms.Normalize(
                 [0.485, 0.456, 0.406],
                 [0.229, 0.224, 0.225])(image)
         return image, filename
 
 
 if __name__ == "__main__":
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
     print(f'running on: {device}')
 
     num_class = 1
-    model = ResNetUNet(n_class=num_class).to(device)
+    model = ResNet50UNet(n_class=num_class).to(device)
 
     if USE_BEST_VAL:
         model.load_state_dict(torch.load(
-            os.path.join(WEIGHT_PATH, "aug_val_weights.pth")))
+            os.path.join(WEIGHT_PATH, "resnet50_best_dice.pth"),
+            map_location=device))
     else:
         model.load_state_dict(torch.load(
-            os.path.join(WEIGHT_PATH, "agu_latest_weights.pth")))
+            os.path.join(WEIGHT_PATH, "resnet50_latest_weights.pth"),
+            map_location=device))
 
-    # chỉ lấy ảnh gốc *_img.png trong thư mục test
     test_img_paths = sorted(glob(os.path.join(TEST_DIR, "*_img.png")))
     print(f'found {len(test_img_paths)} images')
 
-    # small batch_size if you are testing on 1 or 2 images
     b_size = min(25, len(test_img_paths))
 
     test_set = parseTestset(test_img_paths, transform=trans)
     test_loader = DataLoader(test_set, batch_size=b_size,
-                             shuffle=True, num_workers=0)
+                             shuffle=False, num_workers=0)
 
     check_dir(SAVE_PATH)
 

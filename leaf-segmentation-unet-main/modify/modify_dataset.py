@@ -3,7 +3,6 @@ import random
 import shutil
 from pathlib import Path
 
-# --- Config ---
 ORI_IMG = Path("/Users/nguyenphan/Developer/Thesis/leaf-segmentation-unet-main/dataset/ori_dataset")
 MASKS   = Path("/Users/nguyenphan/Developer/Thesis/leaf-segmentation-unet-main/dataset/masks")
 OUT     = Path("/Users/nguyenphan/Developer/Thesis/leaf-segmentation-unet-main/dataset/split_ori")
@@ -11,16 +10,14 @@ OUT     = Path("/Users/nguyenphan/Developer/Thesis/leaf-segmentation-unet-main/d
 VAL_RATIO  = 0.1
 TEST_RATIO = 0.1
 SEED = 42
-# --------------
 
 random.seed(SEED)
 
 for split in ["train", "val", "test"]:
     (OUT / split).mkdir(parents=True, exist_ok=True)
 
-# Lấy tất cả id từ ori_dataset
 all_imgs = sorted(list(ORI_IMG.glob("*.png")))
-ids = [p.stem for p in all_imgs]  # "00000", "00001", ...
+ids = [p.stem for p in all_imgs]
 random.shuffle(ids)
 
 n_total = len(ids)
