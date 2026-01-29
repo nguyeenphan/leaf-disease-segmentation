@@ -1,0 +1,101 @@
+# ==== OS Generated Files ====
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ==== IDE / Editor ====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ==== Python ====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# ==== Jupyter Notebook ====
+.ipynb_checkpoints/
+
+# ==== Testing ====
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# ==== Model Weights & Large Files ====
+*.pth
+*.pt
+*.onnx
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.joblib
+
+# ==== Archives ====
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# ==== Dataset ====
+data/
+dataset/
+datasets/
+**/augmented/
+**/original/
+
+# ==== Output / Generated ====
+output/
+outputs/
+results/
+logs/
+*.log
+checkpoints/
+runs/
+wandb/
+
+# ==== Project Specific ====
+leaf-segmentation-unet-main/model/Model.zip
+leaf-segmentation-unet-main/test/
+CAST_pytorch/checkpoints/
